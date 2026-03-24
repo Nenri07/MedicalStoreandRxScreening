@@ -107,6 +107,7 @@
     <Compile Include="Controllers\PrescriptionController.cs" />
     <Compile Include="Controllers\RiderController.cs" />
     <Compile Include="Controllers\SigninController.cs" />
+    <Compile Include="Controllers\StoreController.cs" />
     <Compile Include="Controllers\StoresController.cs" />
     <Compile Include="DTOs\Order\OrderDtos.cs" />
     <Compile Include="DTOs\Prescription\CheckContraDto.cs" />
