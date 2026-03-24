@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="3.0" xmlns:edmx="http://schemas.microsoft.com/ado/2009/11/edmx">
+ <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <edmx:Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
+    <!-- Diagram content (shape and connector positions) -->
+    <edmx:Diagrams>
+      <Diagram DiagramId="90cdab2b1e6347acb6fae06d7a452864" Name="Diagram1">
+        <EntityTypeShape EntityType="fyp1Model.contraindication" Width="1.5" PointX="3.25" PointY="2.125" IsExpanded="true" />
+        <EntityTypeShape EntityType="fyp1Model.customer" Width="1.5" PointX="3" PointY="9" IsExpanded="true" />
+        <EntityTypeShape EntityType="fyp1Model.medicalstore" Width="1.5" PointX="3" PointY="13.125" IsExpanded="true" />
+        <EntityTypeShape EntityType="fyp1Model.medicine" Width="1.5" PointX="5.25" PointY="13" IsExpanded="true" />
+        <EntityTypeShape EntityType="fyp1Model.medicine_batches" Width="1.5" PointX="7.5" PointY="13.375" IsExpanded="true" />
+        <EntityTypeShape EntityType="fyp1Model.order_items" Width="1.5" PointX="9.75" PointY="9.5" IsExpanded="true" />
+        <EntityTypeShape EntityType="fyp1Model.order" Width="1.5" PointX="7.5" PointY="7.625" IsExpanded="true" />
+        <EntityTypeShape EntityType="fyp1Model.phr" Width="1.5" PointX="7.5" PointY="18.125" IsExpanded="true" />
+        <EntityTypeShape EntityType="fyp1Model.prescription" Width="1.5" PointX="10.5" PointY="13.375" IsExpanded="true" />
+        <EntityTypeShape EntityType="fyp1Model.profile" Width="1.5" PointX="5.25" PointY="17.375" IsExpanded="true" />
+        <EntityTypeShape EntityType="fyp1Model.Rider" Width="1.5" PointX="5.25" PointY="7.625" IsExpanded="true" />
+        <EntityTypeShape EntityType="fyp1Model.user" Width="1.5" PointX="0.75" PointY="11.25" IsExpanded="true" />
+        <AssociationConnector Association="fyp1Model.FK__customer__dob__7EF6D905" ManuallyRouted="false" />
+        <AssociationConnector Association="fyp1Model.FK_orders_customer" ManuallyRouted="false" />
+        <AssociationConnector Association="fyp1Model.FK_prescriptions_customer" ManuallyRouted="false" />
+        <AssociationConnector Association="fyp1Model.FK_profiles_customer" ManuallyRouted="false" />
+        <AssociationConnector Association="fyp1Model.FK__medicalst__passw__03BB8E22" ManuallyRouted="false" />
+        <AssociationConnector Association="fyp1Model.FK_medicine_store" ManuallyRouted="false" />
+        <AssociationConnector Association="fyp1Model.FK_orders_store" ManuallyRouted="false" />
+        <AssociationConnector Association="fyp1Model.FK_rider_medicalstore" ManuallyRouted="false" />
+        <AssociationConnector Association="fyp1Model.FK_medicine_batches_medicine" ManuallyRouted="false" />
+        <AssociationConnector Association="fyp1Model.FK_orderitems_medicine" ManuallyRouted="false" />
+        <AssociationConnector Association="fyp1Model.FK_orders_medicine" ManuallyRouted="false" />
+        <AssociationConnector Association="fyp1Model.FK_orderitems_order" ManuallyRouted="false" />
+        <AssociationConnector Association="fyp1Model.FK_orders_prescription" ManuallyRouted="false" />
+        <AssociationConnector Association="fyp1Model.FK_orders_rider" ManuallyRouted="false" />
+        <AssociationConnector Association="fyp1Model.FK_Profile_PHR" ManuallyRouted="false" />
+        <AssociationConnector Association="fyp1Model.FK_prescriptions_profile" ManuallyRouted="false" />
+        <AssociationConnector Association="fyp1Model.FK_riderid" ManuallyRouted="false" />
+        <EntityTypeShape EntityType="fyp1Model.prescription_medicine" Width="1.5" PointX="12.75" PointY="13.875" />
+        <AssociationConnector Association="fyp1Model.FK__prescript__presc__29221CFB" />
+      </Diagram>
+    </edmx:Diagrams>
+  </edmx:Designer>
+</edmx:Edmx>
