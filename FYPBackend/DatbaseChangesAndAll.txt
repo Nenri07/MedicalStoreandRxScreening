@@ -1,16 +1,15 @@
-﻿/* =====================================================
-   1. SCHEMA CHANGES
-===================================================== */
+﻿select * from [user]
+select * from medicalstore
 
--- Add location columns to medical store
-ALTER TABLE medicalstore 
-ADD latitude DECIMAL(10,7), longitude DECIMAL(10,7);
+UPDATE [user]
+SET Role = 'Store'
+WHERE id = 5;
 
--- Add rider tracking location
-ALTER TABLE Rider 
-ADD current_lat DECIMAL(10,7), current_lng DECIMAL(10,7);
+select * from profiles
+select * from prescriptions
+select * from contraindication
+select * from  prescriptions
 
--- Create prescription_medicine table
 CREATE TABLE prescription_medicine (
     id INT IDENTITY(1,1) PRIMARY KEY,
     prescription_id INT NOT NULL,
@@ -18,21 +17,11 @@ CREATE TABLE prescription_medicine (
     per_day INT NOT NULL,
     days INT NOT NULL,
     total_quantity INT NOT NULL,
+
     FOREIGN KEY (prescription_id) REFERENCES prescriptions(id)
 );
 
-
-/* =====================================================
-   2. BASE DATA (NO DEPENDENCIES)
-===================================================== */
-
--- Users
-INSERT INTO [user] (email, password, Role)
-VALUES
-  ('customer1@test.com', '1234', 'Customer'),
-  ('store1@test.com',    '1234', 'Store');
-
--- Contraindications
+select * from prescription_medicine
 INSERT INTO contraindication (base_name, disease, with_base, severity, message) VALUES
 ('Metformin', 'Kidney Disease', NULL, 'High', 'Use with caution in kidney disease'),
 ('Metformin', NULL, 'Ibuprofen', 'Moderate', 'Risk of lactic acidosis'),
@@ -43,41 +32,56 @@ INSERT INTO contraindication (base_name, disease, with_base, severity, message) 
 ('Omeprazole', NULL, 'Clopidogrel', 'Moderate', 'Reduced effectiveness'),
 ('Levothyroxine', NULL, 'Calcium Carbonate', 'Moderate', 'Take separately'),
 ('Ibuprofen', 'Asthma', NULL, 'Moderate', 'May cause bronchospasm');
+INSERT INTO customer (c_id, name, email, password, contact)
+VALUES (5, 'Ali Khan', 'ali@test.com', '123', '03001234567');
+select * from customer
+INSERT INTO profiles( cus_id, Fullname, relation, gender, contact, age)
+VALUES ( 5, 'Ali Khan', 'Self', 'Male', '03001234567', 25);
 
 
-/* =====================================================
-   3. CUSTOMER + PROFILE
-===================================================== */
 
--- Customer (must match user id if linked)
+-- Disease
+INSERT INTO phr (profile_id, entry_name, category)
+VALUES (5, 'Kidney Disease', 'PastDisease');
+
+-- Already taking medicine
+INSERT INTO phr (profile_id, entry_name, category)
+VALUES (5, 'Ibuprofen', 'AlreadyTakingMedicine');
+ALTER TABLE medicalstore ADD latitude DECIMAL(10,7), longitude DECIMAL(10,7);
+
+
+
+
+INSERT INTO [user] (email, password, Role)
+VALUES
+  ('customer1@test.com', '1234', 'Customer'),
+  ('store1@test.com',    '1234', 'Store');
+
+
+  -- 2. Customer
 INSERT INTO customer (c_id, name, email, password, contact, dob)
 VALUES (11, 'Ali Hassan', 'customer1@test.com', '1234', '03001234567', '1995-05-10');
+-- c_id=1 must match user Id=1 (shared PK via 1-to-1)
 
--- Profile
+-- 3. Profile (family member linked to customer)
 INSERT INTO profiles(cus_id, Fullname, relation, gender, contact, age, default_lat, default_long, Addres)
 VALUES (11, 'Ali Hassan', 'Self', 'Male', '03001234567', 29, 33.6844, 73.0479, 'F-10, Islamabad');
+-- profile.id = 1 (auto)
 
-
-/* =====================================================
-   4. MEDICAL STORE
-===================================================== */
-
+-- 4. Medical Store
 INSERT INTO medicalstore (store_id, name, email, location, password, latitude, longitude)
 VALUES (1, 'HealthPlus Pharmacy', 'store1@test.com', 'G-9 Markaz, Islamabad', '1234', 33.6938, 73.0652);
+-- ~3.2 km from F-10 profile above — within 20km
 
-
-/* =====================================================
-   5. MEDICINES + INVENTORY
-===================================================== */
-
--- Medicines
+-- 5. Medicines in that store
 INSERT INTO medicine (store_id, name, base_name, price, pills_per_pack, category, strength)
 VALUES
-  (1, 'Panadol 500mg', 'Paracetamol', 120, 20, 'Analgesic', '500mg'),
-  (1, 'Amoxil 250mg',  'Amoxicillin', 200, 14, 'Antibiotic', '250mg'),
-  (1, 'Brufen 400mg',  'Ibuprofen', 150, 10, 'Analgesic', '400mg');
+  (1, 'Panadol 500mg', 'Paracetamol', 120, 20, 'Analgesic',   '500mg'),
+  (1, 'Amoxil 250mg',  'Amoxicillin', 200, 14, 'Antibiotic',  '250mg'),
+  (1, 'Brufen 400mg',  'Ibuprofen',   150, 10, 'Analgesic',   '400mg');
+-- med_ids = 1, 2, 3 (auto)
 
--- Batches
+-- 6. Batches with stock
 INSERT INTO medicine_batches (med_id, batch_number, total_pills, remaining_pills, expiry_date, purchase_price_per_pack)
 VALUES
   (1, 'BATCH-PAR-001', 200, 200, '2026-12-31', 90.00),
@@ -85,74 +89,109 @@ VALUES
   (2, 'BATCH-AMX-001', 140, 140, '2026-10-15', 160.00),
   (3, 'BATCH-IBU-001', 100, 100, '2026-09-01', 120.00);
 
+-- 7. Prescription
+INSERT INTO prescription (cust_id, profileid, location, rx_image)
+VALUES (1, 1, 'F-10, Islamabad', '/prescriptions/test.jpg');
+-- prescription.id = 1 (auto)
 
-/* =====================================================
-   6. PRESCRIPTION FLOW
-===================================================== */
-
--- Prescription
-INSERT INTO prescriptions (cust_id, profileid, location, rx_image)
-VALUES (11, 1, 'F-10, Islamabad', '/prescriptions/test.jpg');
-
--- Prescription Medicines
+-- 8. Prescription medicines (what the doctor wrote)
 INSERT INTO prescription_medicine (prescription_id, medicine_name, per_day, days, total_quantity)
 VALUES
   (1, 'Paracetamol', 3, 5, 15),
   (1, 'Amoxicillin', 2, 7, 14);
 
-
-/* =====================================================
-   7. PHR (PATIENT HISTORY)
-===================================================== */
-
+-- 9. PHR for contraindication testing
 INSERT INTO phr (profile_id, entry_name, category)
 VALUES
-  (1, 'Diabetes', 'PastDisease'),
-  (1, 'Metformin', 'AlreadyTakingMedicine');
+  (1, 'Diabetes',    'PastDisease'),
+  (1, 'Metformin',   'AlreadyTakingMedicine');
+
+-- Verify everything looks right:
+SELECT s.store_id, s.name, s.latitude, s.longitude FROM medicalstore s;
+SELECT m.med_id, m.name, m.base_name, m.price, m.pills_per_pack FROM medicine m;
+SELECT b.batch_id, b.med_id, b.remaining_pills, b.expiry_date FROM medicine_batches b;
+SELECT p.id, p.cust_id, p.profileid, p.location FROM prescriptions p;
 
 
-/* =====================================================
-   8. RIDER
-===================================================== */
-
-INSERT INTO Rider (rider_id, med_id, name, email, contact, address, vehinfo, password, status, total_orders, rating)
-VALUES (1, 1, 'Usman Rider', 'usman@test.com', '03111234567', 'G-9 Islamabad', 'Honda 70 - ABC-123', '1234', 'available', 0, 0);
+ALTER TABLE Rider ADD current_lat DECIMAL(10,7), current_lng DECIMAL(10,7);
+INSERT INTO Rider (rider_id,med_id, name, email, contact, address, vehinfo, password, status, total_orders, rating)
+VALUES (1,1, 'Usman Rider', 'usman@test.com', '03111234567', 'G-9 Islamabad', 'Honda 70 - ABC-123', '1234', 'available', 0, 0);
+select * from Rider
 
 
-/* =====================================================
-   9. UPDATES
-===================================================== */
 
-UPDATE [user]
-SET Role = 'Store'
-WHERE id = 5;
+-- what prescriptions exist for customer 11?
+SELECT * FROM prescriptions WHERE cust_id = 11;
+
+-- what profiles exist for customer 11?
+SELECT * FROM profiles WHERE cus_id = 11;
 
 UPDATE prescriptions 
 SET profileid = 13 
 WHERE id = 1 AND cust_id = 11;
 
 
-/* =====================================================
-   10. TESTING / SELECTS
-===================================================== */
 
-SELECT * FROM [user];
-SELECT * FROM customer;
-SELECT * FROM profiles;
-SELECT * FROM prescriptions;
-SELECT * FROM prescription_medicine;
-SELECT * FROM contraindication;
-SELECT * FROM medicalstore;
-SELECT * FROM medicine;
-SELECT * FROM medicine_batches;
-SELECT * FROM Rider;
-SELECT * FROM orders;
+select * from orders
+select * from Rider
 
--- Debug
-SELECT * FROM prescriptions WHERE cust_id = 11;
-SELECT * FROM profiles WHERE cus_id = 11;
 
-SELECT s.store_id, s.name, s.latitude, s.longitude FROM medicalstore s;
-SELECT m.med_id, m.name, m.base_name, m.price, m.pills_per_pack FROM medicine m;
-SELECT b.batch_id, b.med_id, b.remaining_pills, b.expiry_date FROM medicine_batches b;
-SELECT p.id, p.cust_id, p.profileid, p.location FROM prescriptions p;
+
+-- Table 1: subscriptions
+CREATE TABLE subscriptions (
+    id               INT IDENTITY(1,1) PRIMARY KEY,
+    cust_id          INT NOT NULL,
+    store_id         INT NOT NULL,
+    day_of_month     INT NOT NULL,        -- 1 to 28, day each month order fires
+    next_order_date  DATE NOT NULL,       -- when next auto order will be placed
+    status           VARCHAR(20) NOT NULL DEFAULT 'active',  -- active/paused/cancelled
+    created_at       DATETIME DEFAULT GETDATE(),
+
+    FOREIGN KEY (cust_id)  REFERENCES customer(c_id),
+    FOREIGN KEY (store_id) REFERENCES medicalstore(store_id)
+);
+
+-- Table 2: subscription_medicines (what medicines are in each subscription)
+CREATE TABLE subscription_medicines (
+    id                INT IDENTITY(1,1) PRIMARY KEY,
+    subscription_id   INT NOT NULL,
+    base_name         VARCHAR(100) NOT NULL,
+    quantity          INT NOT NULL,
+
+    FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
+);
+
+-- verify
+SELECT * FROM subscriptions;
+SELECT * FROM subscription_medicines;
+
+SELECT c_id, name FROM customer WHERE c_id = 11;
+SELECT store_id, name FROM medicalstore WHERE store_id = 1;
+
+
+UPDATE subscriptions SET next_order_date = CAST(GETDATE() AS DATE) WHERE id = 1;
+
+
+SELECT * FROM subscriptions;
+SELECT * FROM subscription_medicines;
+-- check orders table — new order should appear from ProcessDue
+SELECT * FROM orders ORDER BY order_id DESC;
+
+
+
+INSERT INTO medicine_batches (med_id, batch_number, total_pills, remaining_pills, expiry_date, purchase_price_per_pack)
+VALUES (13, 'EXPIRING-SOON', 100, 100, 
+    CONVERT(VARCHAR, DATEADD(DAY, 5, GETDATE()), 23),  -- 5 days from today
+    90.00);
+
+-- verify
+SELECT batch_id, med_id, remaining_pills, expiry_date FROM medicine_batches;
+UPDATE subscriptions 
+SET next_order_date = CAST(DATEADD(DAY, 2, GETDATE()) AS DATE) 
+WHERE id = 1;
+
+ALTER TABLE medicalstore
+ALTER COLUMN images VARCHAR(MAX);
+
+select * from medicalstore
+select* from [user]

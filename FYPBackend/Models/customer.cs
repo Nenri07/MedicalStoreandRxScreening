@@ -19,6 +19,7 @@ namespace FYPBackend.Models
             this.orders = new HashSet<order>();
             this.prescriptions = new HashSet<prescription>();
             this.profiles = new HashSet<profile>();
+            this.subscriptions = new HashSet<subscriptions>();
         }
     
         public int c_id { get; set; }
@@ -32,5 +33,6 @@ namespace FYPBackend.Models
         public virtual ICollection<order> orders { get; set; }
         public virtual ICollection<prescription> prescriptions { get; set; }
         public virtual ICollection<profile> profiles { get; set; }
+        public virtual ICollection<subscriptions> subscriptions { get; set; }
     }
 }

@@ -221,5 +221,106 @@ namespace FYPBackend.Controllers
 
             return Ok("Updated Successfully");
         }
+        [HttpGet]
+        [Route("GetProfiles")]
+        public IHttpActionResult GetProfiles(int custId)
+        {
+            bool customerExists = _db.customers.Any(c => c.c_id == custId);
+            if (!customerExists)
+                return BadRequest("Customer not found");
+
+            var profiles = _db.profiles
+                .Where(p => p.cus_id == custId)
+                .ToList()
+                .Select(p => new
+                {
+                    p.id,
+                    p.cus_id,
+                    fullname = p.Fullname,
+                    p.relation,
+                    p.gender,
+                    p.contact,
+                    p.age,
+                    p.default_lat,
+                    p.default_long,
+                    address = p.Addres,
+                    phr = _db.phrs
+                        .Where(x => x.profile_id == p.id)
+                        .ToList()
+                        .Select(x => new
+                        {
+                            x.id,
+                            x.entry_name,
+                            x.category
+                        })
+                        .ToList()
+                })
+                .ToList();
+
+            return Ok(profiles);
+        }
+
+        // ✅ GET SINGLE PROFILE DETAIL
+        // GET api/Customer/GetProfile?profileId=1
+        // Used by: Edit member screen, PHR view screen
+        [HttpGet]
+        [Route("GetProfile")]
+        public IHttpActionResult GetProfile(int profileId)
+        {
+            var p = _db.profiles.FirstOrDefault(x => x.id == profileId);
+            if (p == null)
+                return NotFound();
+
+            var phrData = _db.phrs.Where(x => x.profile_id == profileId).ToList();
+
+            return Ok(new
+            {
+                p.id,
+                p.cus_id,
+                fullname = p.Fullname,
+                p.relation,
+                p.gender,
+                p.contact,
+                p.age,
+                p.default_lat,
+                p.default_long,
+                address = p.Addres,
+                allergies = phrData
+                    .Where(x => x.category == "Allergy")
+                    .Select(x => x.entry_name)
+                    .ToList(),
+                pastDiseases = phrData
+                    .Where(x => x.category == "PastDisease")
+                    .Select(x => x.entry_name)
+                    .ToList(),
+                alreadyTakingMedicines = phrData
+                    .Where(x => x.category == "AlreadyTakingMedicine")
+                    .Select(x => x.entry_name)
+                    .ToList()
+            });
+        }
+
+        // ✅ DELETE PROFILE
+        // DELETE api/Customer/DeleteProfile?profileId=1
+        // Used by: Edit member screen (delete button)
+        [HttpDelete]
+        [Route("DeleteProfile")]
+        public IHttpActionResult DeleteProfile(int profileId)
+        {
+            var profile = _db.profiles.FirstOrDefault(p => p.id == profileId);
+            if (profile == null)
+                return NotFound();
+
+            // Remove PHR entries first (FK constraint)
+            var phrs = _db.phrs.Where(x => x.profile_id == profileId).ToList();
+            foreach (var phr in phrs)
+                _db.phrs.Remove(phr);
+
+            _db.profiles.Remove(profile);
+            _db.SaveChanges();
+
+            return Ok("Profile deleted successfully");
+        }
+
     }
 }

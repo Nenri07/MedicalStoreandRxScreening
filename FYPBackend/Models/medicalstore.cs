@@ -19,6 +19,7 @@ namespace FYPBackend.Models
             this.medicines = new HashSet<medicine>();
             this.orders = new HashSet<order>();
             this.Riders = new HashSet<Rider>();
+            this.subscriptions = new HashSet<subscriptions>();
         }
     
         public int store_id { get; set; }
@@ -34,5 +35,6 @@ namespace FYPBackend.Models
         public virtual ICollection<medicine> medicines { get; set; }
         public virtual ICollection<order> orders { get; set; }
         public virtual ICollection<Rider> Riders { get; set; }
+        public virtual ICollection<subscriptions> subscriptions { get; set; }
     }
 }

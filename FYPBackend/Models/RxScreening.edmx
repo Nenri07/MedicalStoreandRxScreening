@@ -35,7 +35,7 @@
           <Property Name="name" Type="varchar" MaxLength="50" />
           <Property Name="email" Type="varchar" MaxLength="50" />
           <Property Name="location" Type="varchar" MaxLength="50" />
-          <Property Name="images" Type="varchar" MaxLength="50" />
+          <Property Name="images" Type="varchar(max)" />
           <Property Name="password" Type="varchar" MaxLength="50" />
           <Property Name="latitude" Type="decimal" Precision="10" Scale="7" />
           <Property Name="longitude" Type="decimal" Precision="10" Scale="7" />
@@ -160,6 +160,27 @@
           <Property Name="current_lat" Type="decimal" Precision="10" Scale="7" />
           <Property Name="current_lng" Type="decimal" Precision="10" Scale="7" />
         </EntityType>
+        <EntityType Name="subscription_medicines">
+          <Key>
+            <PropertyRef Name="id" />
+          </Key>
+          <Property Name="id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="subscription_id" Type="int" Nullable="false" />
+          <Property Name="base_name" Type="varchar" MaxLength="100" Nullable="false" />
+          <Property Name="quantity" Type="int" Nullable="false" />
+        </EntityType>
+        <EntityType Name="subscriptions">
+          <Key>
+            <PropertyRef Name="id" />
+          </Key>
+          <Property Name="id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="cust_id" Type="int" Nullable="false" />
+          <Property Name="store_id" Type="int" Nullable="false" />
+          <Property Name="day_of_month" Type="int" Nullable="false" />
+          <Property Name="next_order_date" Type="date" Nullable="false" />
+          <Property Name="status" Type="varchar" MaxLength="20" Nullable="false" />
+          <Property Name="created_at" Type="datetime" />
+        </EntityType>
         <EntityType Name="user">
           <Key>
             <PropertyRef Name="Id" />
@@ -202,6 +223,42 @@
             </Principal>
             <Dependent Role="prescription_medicine">
               <PropertyRef Name="prescription_id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK__subscript__cust___3E1D39E1">
+          <End Role="customer" Type="Self.customer" Multiplicity="1" />
+          <End Role="subscriptions" Type="Self.subscriptions" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="customer">
+              <PropertyRef Name="c_id" />
+            </Principal>
+            <Dependent Role="subscriptions">
+              <PropertyRef Name="cust_id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK__subscript__store__3F115E1A">
+          <End Role="medicalstore" Type="Self.medicalstore" Multiplicity="1" />
+          <End Role="subscriptions" Type="Self.subscriptions" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="medicalstore">
+              <PropertyRef Name="store_id" />
+            </Principal>
+            <Dependent Role="subscriptions">
+              <PropertyRef Name="store_id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK__subscript__subsc__41EDCAC5">
+          <End Role="subscriptions" Type="Self.subscriptions" Multiplicity="1" />
+          <End Role="subscription_medicines" Type="Self.subscription_medicines" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="subscriptions">
+              <PropertyRef Name="id" />
+            </Principal>
+            <Dependent Role="subscription_medicines">
+              <PropertyRef Name="subscription_id" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
@@ -402,6 +459,8 @@
           <EntitySet Name="prescriptions" EntityType="Self.prescriptions" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="profiles" EntityType="Self.profiles" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="Rider" EntityType="Self.Rider" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="subscription_medicines" EntityType="Self.subscription_medicines" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="subscriptions" EntityType="Self.subscriptions" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="user" EntityType="Self.user" Schema="dbo" store:Type="Tables" />
           <AssociationSet Name="FK__customer__dob__7EF6D905" Association="Self.FK__customer__dob__7EF6D905">
             <End Role="user" EntitySet="user" />
@@ -414,6 +473,18 @@
           <AssociationSet Name="FK__prescript__presc__29221CFB" Association="Self.FK__prescript__presc__29221CFB">
             <End Role="prescriptions" EntitySet="prescriptions" />
             <End Role="prescription_medicine" EntitySet="prescription_medicine" />
+          </AssociationSet>
+          <AssociationSet Name="FK__subscript__cust___3E1D39E1" Association="Self.FK__subscript__cust___3E1D39E1">
+            <End Role="customer" EntitySet="customer" />
+            <End Role="subscriptions" EntitySet="subscriptions" />
+          </AssociationSet>
+          <AssociationSet Name="FK__subscript__store__3F115E1A" Association="Self.FK__subscript__store__3F115E1A">
+            <End Role="medicalstore" EntitySet="medicalstore" />
+            <End Role="subscriptions" EntitySet="subscriptions" />
+          </AssociationSet>
+          <AssociationSet Name="FK__subscript__subsc__41EDCAC5" Association="Self.FK__subscript__subsc__41EDCAC5">
+            <End Role="subscriptions" EntitySet="subscriptions" />
+            <End Role="subscription_medicines" EntitySet="subscription_medicines" />
           </AssociationSet>
           <AssociationSet Name="FK_medicine_batches_medicine" Association="Self.FK_medicine_batches_medicine">
             <End Role="medicine" EntitySet="medicine" />
@@ -505,6 +576,7 @@
           <NavigationProperty Name="orders" Relationship="Self.FK_orders_customer" FromRole="customer" ToRole="orders" />
           <NavigationProperty Name="prescriptions" Relationship="Self.FK_prescriptions_customer" FromRole="customer" ToRole="prescriptions" />
           <NavigationProperty Name="profiles" Relationship="Self.FK_profiles_customer" FromRole="customer" ToRole="profiles" />
+          <NavigationProperty Name="subscriptions" Relationship="fyp1Model.FK__subscript__cust___3E1D39E1" FromRole="customer" ToRole="subscriptions" />
         </EntityType>
         <EntityType Name="medicalstore">
           <Key>
@@ -514,7 +586,7 @@
           <Property Name="name" Type="String" MaxLength="50" FixedLength="false" Unicode="false" />
           <Property Name="email" Type="String" MaxLength="50" FixedLength="false" Unicode="false" />
           <Property Name="location" Type="String" MaxLength="50" FixedLength="false" Unicode="false" />
-          <Property Name="images" Type="String" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Name="images" Type="String" MaxLength="Max" FixedLength="false" Unicode="false" />
           <Property Name="password" Type="String" MaxLength="50" FixedLength="false" Unicode="false" />
           <NavigationProperty Name="user" Relationship="Self.FK__medicalst__passw__03BB8E22" FromRole="medicalstore" ToRole="user" />
           <NavigationProperty Name="medicines" Relationship="Self.FK_medicine_store" FromRole="medicalstore" ToRole="medicine" />
@@ -522,6 +594,7 @@
           <NavigationProperty Name="Riders" Relationship="Self.FK_rider_medicalstore" FromRole="medicalstore" ToRole="Rider" />
           <Property Name="latitude" Type="Decimal" Precision="10" Scale="7" />
           <Property Name="longitude" Type="Decimal" Precision="10" Scale="7" />
+          <NavigationProperty Name="subscriptions" Relationship="fyp1Model.FK__subscript__store__3F115E1A" FromRole="medicalstore" ToRole="subscriptions" />
         </EntityType>
         <EntityType Name="medicine">
           <Key>
@@ -962,6 +1035,20 @@
             <End Role="prescription" EntitySet="prescriptions" />
             <End Role="prescription_medicine" EntitySet="prescription_medicine" />
           </AssociationSet>
+          <EntitySet Name="subscription_medicines" EntityType="fyp1Model.subscription_medicines" />
+          <EntitySet Name="subscriptions" EntityType="fyp1Model.subscriptions" />
+          <AssociationSet Name="FK__subscript__cust___3E1D39E1" Association="fyp1Model.FK__subscript__cust___3E1D39E1">
+            <End Role="customer" EntitySet="customers" />
+            <End Role="subscriptions" EntitySet="subscriptions" />
+          </AssociationSet>
+          <AssociationSet Name="FK__subscript__store__3F115E1A" Association="fyp1Model.FK__subscript__store__3F115E1A">
+            <End Role="medicalstore" EntitySet="medicalstores" />
+            <End Role="subscriptions" EntitySet="subscriptions" />
+          </AssociationSet>
+          <AssociationSet Name="FK__subscript__subsc__41EDCAC5" Association="fyp1Model.FK__subscript__subsc__41EDCAC5">
+            <End Role="subscriptions" EntitySet="subscriptions" />
+            <End Role="subscription_medicines" EntitySet="subscription_medicines" />
+          </AssociationSet>
         </EntityContainer>
         <EntityType Name="prescription_medicine">
           <Key>
@@ -984,6 +1071,67 @@
             </Principal>
             <Dependent Role="prescription_medicine">
               <PropertyRef Name="prescription_id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityType Name="subscription_medicines">
+          <Key>
+            <PropertyRef Name="id" />
+          </Key>
+          <Property Name="id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="subscription_id" Type="Int32" Nullable="false" />
+          <Property Name="base_name" Type="String" Nullable="false" MaxLength="100" FixedLength="false" Unicode="false" />
+          <Property Name="quantity" Type="Int32" Nullable="false" />
+          <NavigationProperty Name="subscriptions" Relationship="fyp1Model.FK__subscript__subsc__41EDCAC5" FromRole="subscription_medicines" ToRole="subscriptions" />
+        </EntityType>
+        <EntityType Name="subscriptions">
+          <Key>
+            <PropertyRef Name="id" />
+          </Key>
+          <Property Name="id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="cust_id" Type="Int32" Nullable="false" />
+          <Property Name="store_id" Type="Int32" Nullable="false" />
+          <Property Name="day_of_month" Type="Int32" Nullable="false" />
+          <Property Name="next_order_date" Type="DateTime" Nullable="false" Precision="0" />
+          <Property Name="status" Type="String" Nullable="false" MaxLength="20" FixedLength="false" Unicode="false" />
+          <Property Name="created_at" Type="DateTime" Precision="3" />
+          <NavigationProperty Name="customer" Relationship="fyp1Model.FK__subscript__cust___3E1D39E1" FromRole="subscriptions" ToRole="customer" />
+          <NavigationProperty Name="medicalstore" Relationship="fyp1Model.FK__subscript__store__3F115E1A" FromRole="subscriptions" ToRole="medicalstore" />
+          <NavigationProperty Name="subscription_medicines" Relationship="fyp1Model.FK__subscript__subsc__41EDCAC5" FromRole="subscriptions" ToRole="subscription_medicines" />
+        </EntityType>
+        <Association Name="FK__subscript__cust___3E1D39E1">
+          <End Type="fyp1Model.customer" Role="customer" Multiplicity="1" />
+          <End Type="fyp1Model.subscriptions" Role="subscriptions" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="customer">
+              <PropertyRef Name="c_id" />
+            </Principal>
+            <Dependent Role="subscriptions">
+              <PropertyRef Name="cust_id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK__subscript__store__3F115E1A">
+          <End Type="fyp1Model.medicalstore" Role="medicalstore" Multiplicity="1" />
+          <End Type="fyp1Model.subscriptions" Role="subscriptions" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="medicalstore">
+              <PropertyRef Name="store_id" />
+            </Principal>
+            <Dependent Role="subscriptions">
+              <PropertyRef Name="store_id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK__subscript__subsc__41EDCAC5">
+          <End Type="fyp1Model.subscriptions" Role="subscriptions" Multiplicity="1" />
+          <End Type="fyp1Model.subscription_medicines" Role="subscription_medicines" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="subscriptions">
+              <PropertyRef Name="id" />
+            </Principal>
+            <Dependent Role="subscription_medicines">
+              <PropertyRef Name="subscription_id" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
@@ -1166,6 +1314,29 @@
                 <ScalarProperty Name="per_day" ColumnName="per_day" />
                 <ScalarProperty Name="medicine_name" ColumnName="medicine_name" />
                 <ScalarProperty Name="prescription_id" ColumnName="prescription_id" />
+                <ScalarProperty Name="id" ColumnName="id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="subscription_medicines">
+            <EntityTypeMapping TypeName="fyp1Model.subscription_medicines">
+              <MappingFragment StoreEntitySet="subscription_medicines">
+                <ScalarProperty Name="quantity" ColumnName="quantity" />
+                <ScalarProperty Name="base_name" ColumnName="base_name" />
+                <ScalarProperty Name="subscription_id" ColumnName="subscription_id" />
+                <ScalarProperty Name="id" ColumnName="id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="subscriptions">
+            <EntityTypeMapping TypeName="fyp1Model.subscriptions">
+              <MappingFragment StoreEntitySet="subscriptions">
+                <ScalarProperty Name="created_at" ColumnName="created_at" />
+                <ScalarProperty Name="status" ColumnName="status" />
+                <ScalarProperty Name="next_order_date" ColumnName="next_order_date" />
+                <ScalarProperty Name="day_of_month" ColumnName="day_of_month" />
+                <ScalarProperty Name="store_id" ColumnName="store_id" />
+                <ScalarProperty Name="cust_id" ColumnName="cust_id" />
                 <ScalarProperty Name="id" ColumnName="id" />
               </MappingFragment>
             </EntityTypeMapping>

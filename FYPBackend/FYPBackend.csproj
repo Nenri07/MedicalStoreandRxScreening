@@ -109,6 +109,7 @@
     <Compile Include="Controllers\SigninController.cs" />
     <Compile Include="Controllers\StoreController.cs" />
     <Compile Include="Controllers\StoresController.cs" />
+    <Compile Include="Controllers\SubscriptionController.cs" />
     <Compile Include="DTOs\Order\OrderDtos.cs" />
     <Compile Include="DTOs\Prescription\CheckContraDto.cs" />
     <Compile Include="DTOs\Prescription\CreatePrescriptionDto.cs" />
@@ -175,6 +176,12 @@
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>RxScreening.edmx</DependentUpon>
+    </Compile>
+    <Compile Include="Models\subscriptions.cs">
+      <DependentUpon>RxScreening.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\subscription_medicines.cs">
+      <DependentUpon>RxScreening.tt</DependentUpon>
     </Compile>
     <Compile Include="Models\user.cs">
       <DependentUpon>RxScreening.tt</DependentUpon>

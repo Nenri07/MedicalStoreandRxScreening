@@ -36,6 +36,11 @@
         <AssociationConnector Association="fyp1Model.FK_riderid" ManuallyRouted="false" />
         <EntityTypeShape EntityType="fyp1Model.prescription_medicine" Width="1.5" PointX="12.75" PointY="13.875" />
         <AssociationConnector Association="fyp1Model.FK__prescript__presc__29221CFB" />
+        <EntityTypeShape EntityType="fyp1Model.subscription_medicines" Width="1.5" PointX="12.5" PointY="5.875" />
+        <EntityTypeShape EntityType="fyp1Model.subscriptions" Width="1.5" PointX="10.25" PointY="5.375" />
+        <AssociationConnector Association="fyp1Model.FK__subscript__cust___3E1D39E1" />
+        <AssociationConnector Association="fyp1Model.FK__subscript__store__3F115E1A" />
+        <AssociationConnector Association="fyp1Model.FK__subscript__subsc__41EDCAC5" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

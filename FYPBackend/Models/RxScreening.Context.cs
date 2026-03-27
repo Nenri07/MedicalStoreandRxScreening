@@ -38,5 +38,7 @@ namespace FYPBackend.Models
         public DbSet<Rider> Riders { get; set; }
         public DbSet<user> users { get; set; }
         public DbSet<prescription_medicine> prescription_medicine { get; set; }
+        public DbSet<subscription_medicines> subscription_medicines { get; set; }
+        public DbSet<subscriptions> subscriptions { get; set; }
     }
 }

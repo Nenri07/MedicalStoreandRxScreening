@@ -1,6 +1,9 @@
-﻿using FYPBackend.Models;
+﻿using FYPBackend.DTOs.Store;
+using FYPBackend.Models;
 using System;
+using System.IO;
 using System.Linq;
+using System.Web;
 using System.Web.Http;
 
 namespace FYPBackend.Controllers
@@ -13,51 +16,103 @@ namespace FYPBackend.Controllers
         // ─────────────────────────────────────────────
         // 1. STORE SIGNUP
         // POST api/Store/StoreSignup
-        // ─────────────────────────────────────────────
+        // 
         [HttpPost]
         [Route("StoreSignup")]
-        public IHttpActionResult StoreSignup([FromBody] StoreSignupDto dto)
+        public IHttpActionResult StoreSignup()
         {
-            if (dto == null)
-                return BadRequest("Invalid data");
-
-            if (string.IsNullOrEmpty(dto.email) || string.IsNullOrEmpty(dto.password))
-                return BadRequest("Email and Password are required");
-
-            bool emailExists = _db.users.Any(u => u.email == dto.email);
-            if (emailExists)
-                return BadRequest("Email already exists");
-
-            // create user row first
-            var newUser = new user
+            try
             {
-                email = dto.email,
-                password = dto.password,
-                Role = "Store"
-            };
+                var request = HttpContext.Current.Request;
 
-            _db.users.Add(newUser);
-            _db.SaveChanges();
+                string email = request["email"];
+                string password = request["password"];
+                string name = request["name"];
+                string location = request["location"];
 
-            // create medicalstore row linked to user
-            var newStore = new medicalstore
+                if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
+                    return BadRequest("Email and Password are required");
+
+                bool emailExists = _db.users.Any(u => u.email == email);
+                if (emailExists)
+                    return BadRequest("Email already exists");
+
+                // ✅ Create user
+                var newUser = new user
+                {
+                    email = email,
+                    password = password,
+                    Role = "Store"
+                };
+
+                _db.users.Add(newUser);
+                _db.SaveChanges();
+
+                string imagePath = "";
+
+                // ✅ Handle Image Upload
+                if (request.Files.Count > 0)
+                {
+                    var file = request.Files[0];
+
+                    // Clean store name for folder
+                    string safeStoreName = name.Replace(" ", "_");
+
+                    // Root folder
+                    string rootFolder = HttpContext.Current.Server.MapPath("~/Uploads/Stores/");
+                    if (!Directory.Exists(rootFolder))
+                        Directory.CreateDirectory(rootFolder);
+
+                    // Store-specific folder
+                    string storeFolder = Path.Combine(rootFolder, safeStoreName);
+                    if (!Directory.Exists(storeFolder))
+                        Directory.CreateDirectory(storeFolder);
+
+                    // Unique file name
+                    string fileName = "STORE_" + DateTime.Now.Ticks + Path.GetExtension(file.FileName);
+                    string fullPath = Path.Combine(storeFolder, fileName);
+
+                    file.SaveAs(fullPath);
+
+                    // Save URL
+                    imagePath = "/Uploads/Stores/" + safeStoreName + "/" + fileName;
+                }
+
+                // ✅ Create store
+                var newStore = new medicalstore
+                {
+                    store_id = newUser.Id,
+                    name = name,
+                    email = email,
+                    location = location,
+                    password = password,
+                    images = imagePath
+                };
+
+                _db.medicalstores.Add(newStore);
+                _db.SaveChanges();
+
+                return Ok(new
+                {
+                    message = "Medical store registered successfully",
+                    storeId = newStore.store_id,
+                    imageUrl = imagePath
+                });
+            }
+            catch (System.Data.Entity.Validation.DbEntityValidationException ex)
             {
-                store_id = newUser.Id,
-                name = dto.name,
-                email = dto.email,
-                location = dto.location,
-                password = dto.password,
-                images = dto.images
-            };
+                var errors = ex.EntityValidationErrors
+                    .SelectMany(x => x.ValidationErrors)
+                    .Select(x => x.ErrorMessage);
 
-            _db.medicalstores.Add(newStore);
-            _db.SaveChanges();
+                string errorMessage = string.Join("; ", errors);
 
-            return Ok(new
+                return BadRequest(errorMessage);
+            }
+            catch (Exception ex)
             {
-                message = "Medical store registered successfully",
-                storeId = newStore.store_id
-            });
+                return BadRequest(ex.InnerException?.Message ?? ex.Message);
+            }
         }
 
         // ─────────────────────────────────────────────
@@ -203,6 +258,291 @@ namespace FYPBackend.Controllers
 
             return Ok(medicines);
         }
+        [HttpGet]
+        [Route("GetProfile")]
+        public IHttpActionResult GetProfile(int storeId)
+        {
+            var store = _db.medicalstores.FirstOrDefault(s => s.store_id == storeId);
+            if (store == null)
+                return NotFound();
+
+            return Ok(new
+            {
+                store.store_id,
+                store.name,
+                store.email,
+                store.location,
+                store.images,
+                store.latitude,
+                store.longitude
+            });
+        }
+
+        // ✅ UPDATE STORE PROFILE
+        // PUT api/Store/UpdateProfile
+        // Used by: Store edit profile screen
+        
+        [HttpPut]
+        [Route("UpdateProfile")]
+        public IHttpActionResult UpdateProfile()
+        {
+            try
+            {
+                var request = HttpContext.Current.Request;
+
+                int storeId = Convert.ToInt32(request["storeId"]);
+                string name = request["name"];
+                string location = request["location"];
+                string latitudeStr = request["latitude"];
+                string longitudeStr = request["longitude"];
+
+                var store = _db.medicalstores.FirstOrDefault(s => s.store_id == storeId);
+                if (store == null)
+                    return NotFound();
+
+                // ✅ Update basic fields
+                store.name = name;
+                store.location = location;
+
+                if (!string.IsNullOrEmpty(latitudeStr))
+                    store.latitude = Convert.ToDecimal(latitudeStr);
+
+                if (!string.IsNullOrEmpty(longitudeStr))
+                    store.longitude = Convert.ToDecimal(longitudeStr);
+
+                // ✅ Handle Image Upload
+                if (request.Files.Count > 0)
+                {
+                    var file = request.Files[0];
+
+                    string safeStoreName = name.Replace(" ", "_");
+
+                    string rootFolder = HttpContext.Current.Server.MapPath("~/Uploads/Stores/");
+                    if (!Directory.Exists(rootFolder))
+                        Directory.CreateDirectory(rootFolder);
+
+                    string storeFolder = Path.Combine(rootFolder, safeStoreName);
+                    if (!Directory.Exists(storeFolder))
+                        Directory.CreateDirectory(storeFolder);
+
+                    string fileName = "STORE_" + DateTime.Now.Ticks + Path.GetExtension(file.FileName);
+                    string fullPath = Path.Combine(storeFolder, fileName);
+
+                    file.SaveAs(fullPath);
+
+                    // ✅ Update image path
+                    store.images = "/Uploads/Stores/" + safeStoreName + "/" + fileName;
+                }
+
+                _db.SaveChanges();
+
+                return Ok(new
+                {
+                    message = "Store profile updated successfully",
+                    imageUrl = store.images
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.InnerException?.Message ?? ex.Message);
+            }
+        }
+        // ✅ ADD RIDER TO STORE
+        // POST api/Store/AddRider
+        // Used by: Store rider management screen
+        [HttpPost]
+        [Route("AddRider")]
+        public IHttpActionResult AddRider([FromBody] AddRiderDto dto)
+        {
+            if (dto == null)
+                return BadRequest("Invalid data");
+
+            if (string.IsNullOrWhiteSpace(dto.email) || string.IsNullOrWhiteSpace(dto.password))
+                return BadRequest("Email and Password are required");
+
+            bool emailExists = _db.users.Any(u => u.email == dto.email);
+            if (emailExists)
+                return BadRequest("Email already exists");
+
+            var store = _db.medicalstores.FirstOrDefault(s => s.store_id == dto.storeId);
+            if (store == null)
+                return BadRequest("Store not found");
+
+            // Create user row first
+            var newUser = new user
+            {
+                email = dto.email,
+                password = dto.password,
+                Role = "Rider"
+            };
+
+            _db.users.Add(newUser);
+            _db.SaveChanges();
+
+            // Create rider row
+            var newRider = new Rider
+            {
+                rider_id = newUser.Id,
+                name = dto.name,
+                email = dto.email,
+                password = dto.password,
+                contact = dto.contact,
+                med_id = dto.storeId,
+                status = "offline",
+                rating = 0,
+                total_orders = 0
+            };
+
+            _db.Riders.Add(newRider);
+            _db.SaveChanges();
+
+            return Ok(new
+            {
+                message = "Rider added successfully",
+                riderId = newRider.rider_id,
+                name = newRider.name
+            });
+        }
+
+        // ✅ DELETE MEDICINE
+        // DELETE api/Store/DeleteMedicine?medId=1
+        // Used by: Store medicine list screen
+        [HttpDelete]
+        [Route("DeleteMedicine")]
+        public IHttpActionResult DeleteMedicine(int medId)
+        {
+            var medicine = _db.medicines.FirstOrDefault(m => m.med_id == medId);
+            if (medicine == null)
+                return NotFound();
+
+            // Remove batches first (FK constraint)
+            var batches = _db.medicine_batches.Where(b => b.med_id == medId).ToList();
+            foreach (var batch in batches)
+                _db.medicine_batches.Remove(batch);
+
+            _db.medicines.Remove(medicine);
+            _db.SaveChanges();
+
+            return Ok("Medicine deleted successfully");
+        }
+        // ─────────────────────────────────────────────
+        // GET EXPIRY ALERTS FOR A STORE
+        // GET api/Store/ExpiryAlerts?storeId=1&daysAhead=30
+        // Returns medicines expiring within next X days
+        // Store sees this on their dashboard
+        // ─────────────────────────────────────────────
+        [HttpGet]
+        [Route("ExpiryAlerts")]
+        public IHttpActionResult ExpiryAlerts(int storeId, int daysAhead = 30)
+        {
+            var store = _db.medicalstores.FirstOrDefault(s => s.store_id == storeId);
+            if (store == null)
+                return NotFound();
+
+            // today and threshold date as strings yyyy-MM-dd for string comparison
+            string today = DateTime.Today.ToString("yyyy-MM-dd");
+            string threshold = DateTime.Today.AddDays(daysAhead).ToString("yyyy-MM-dd");
+
+            // get all batches for this store that expire within the window
+            var alerts = _db.medicine_batches
+                .Where(b => b.remaining_pills > 0
+                         && string.Compare(b.expiry_date, today) >= 0
+                         && string.Compare(b.expiry_date, threshold) <= 0)
+                .ToList()
+                .Select(b =>
+                {
+                    var med = _db.medicines.FirstOrDefault(m =>
+                        m.med_id == b.med_id &&
+                        m.store_id == storeId);
+
+                    if (med == null) return null;
+
+                    // days remaining calculation
+                    DateTime expiry;
+                    bool parsed = DateTime.TryParse(b.expiry_date, out expiry);
+                    int daysLeft = parsed ? (expiry - DateTime.Today).Days : 0;
+
+                    // urgency level
+                    string urgency = daysLeft <= 7 ? "critical" :
+                                     daysLeft <= 15 ? "high" :
+                                     daysLeft <= 30 ? "medium" : "low";
+
+                    return new
+                    {
+                        b.batch_id,
+                        b.batch_number,
+                        b.expiry_date,
+                        daysLeft,
+                        urgency,
+                        remainingPills = b.remaining_pills,
+                        medId = med.med_id,
+                        medicineName = med.name,
+                        baseName = med.base_name
+                    };
+                })
+                .Where(x => x != null)
+                .OrderBy(x => x.daysLeft)
+                .ToList();
+
+            if (!alerts.Any())
+                return Ok(new { message = "No expiry alerts", alerts = alerts });
+
+            return Ok(new
+            {
+                storeId = storeId,
+                checkedOn = today,
+                totalAlerts = alerts.Count,
+                critical = alerts.Count(x => x.urgency == "critical"),
+                high = alerts.Count(x => x.urgency == "high"),
+                medium = alerts.Count(x => x.urgency == "medium"),
+                alerts = alerts
+            });
+        }
+
+        // ─────────────────────────────────────────────
+        // LOW STOCK ALERT
+        // GET api/Store/LowStock?storeId=1&threshold=20
+        // Returns medicines with remaining pills below threshold
+        // ─────────────────────────────────────────────
+        [HttpGet]
+        [Route("LowStock")]
+        public IHttpActionResult LowStock(int storeId, int threshold = 20)
+        {
+            var medicines = _db.medicines
+                .Where(m => m.store_id == storeId)
+                .ToList()
+                .Select(m =>
+                {
+                    int totalStock = _db.medicine_batches
+                        .Where(b => b.med_id == m.med_id && b.remaining_pills > 0)
+                        .Sum(b => (int?)b.remaining_pills) ?? 0;
+
+                    return new
+                    {
+                        m.med_id,
+                        m.name,
+                        m.base_name,
+                        m.category,
+                        m.pills_per_pack,
+                        totalStock,
+                        isCritical = totalStock == 0,
+                        isLow = totalStock > 0 && totalStock <= threshold
+                    };
+                })
+                .Where(x => x.totalStock <= threshold)
+                .OrderBy(x => x.totalStock)
+                .ToList();
+
+            return Ok(new
+            {
+                storeId = storeId,
+                threshold = threshold,
+                totalAlerts = medicines.Count,
+                outOfStock = medicines.Count(x => x.isCritical),
+                lowStock = medicines.Count(x => x.isLow),
+                medicines = medicines
+            });
+        }
     }
 
     // ─────────────────────────────────────────────
@@ -236,5 +576,23 @@ namespace FYPBackend.Controllers
         public int price { get; set; }
         public string expiryDate { get; set; }
         public int quantity { get; set; }
+    }
+    public class UpdateStoreProfileDto
+    {
+        public int storeId { get; set; }
+        public string name { get; set; }
+        public string location { get; set; }
+        public string images { get; set; }
+        public double? latitude { get; set; }
+        public double? longitude { get; set; }
+    }
+
+    public class AddRiderDto
+    {
+        public int storeId { get; set; }
+        public string name { get; set; }
+        public string email { get; set; }
+        public string password { get; set; }
+        public string contact { get; set; }
     }
 }
